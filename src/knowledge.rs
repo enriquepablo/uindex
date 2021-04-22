@@ -51,10 +51,8 @@ pub fn derive_db() -> TokenStream {
             }
             fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
                 let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().expect("parse result");
-                let fact = facts.pop().unwrap();
-                let q = self.mpparser.parse_fact(fact);
-                let (resp, _, _) = self.facts.ask_fact(q);
-                resp
+                let q = facts.iter().map(|fact| self.mpparser.parse_fact(fact)).collect();
+                self.facts.ask_facts(q)
             }
         }
         impl<'a> DB<'a> {

@@ -65,12 +65,22 @@ impl<'a> FactSet<'a> {
         let response: Vec<MPMatching> = vec![];
         let matching: MPMatching = HashMap::new();
         let paths: &[MPPath] = unsafe { mem::transmute( fact.as_slice() ) };
-        let (response, unique) = self.root.query_paths(paths, matching, response);
+        let npaths = vec![paths];
+        let qpaths: &[&[MPPath]] = unsafe { mem::transmute( npaths.as_slice() ) };
+        let (response, unique) = self.root.query_paths(qpaths, matching, response, Some(&(*self.root)));
         (response, fact, unique)
     }
     pub fn ask_fact_bool (&'a self, fact: Vec<MPPath<'a>>) -> (bool, Vec<MPPath<'a>>) {
         let (resp, fact, _) = self.ask_fact(fact);
         (resp.len() > 0, fact)
+    }
+    pub fn ask_facts (&'a self, facts: Vec<Vec<MPPath<'a>>>) -> Vec<MPMatching<'a>> {
+        let response: Vec<MPMatching> = vec![];
+        let matching: MPMatching = HashMap::new();
+        let paths: Vec<&[MPPath]> = facts.iter().map(|fact| fact.as_slice()).collect();
+        let qpaths: &[&[MPPath]] = unsafe { mem::transmute( paths.as_slice() ) };
+        let (response, _) = self.root.query_paths(qpaths, matching, response, Some(&(*self.root)));
+        response
     }
     pub fn follow_and_create_paths(&'a self,
                                    mut parent: &'a FSNode<'a>,
@@ -239,10 +249,20 @@ impl<'a> FSNode<'a> {
         }
     }
     pub fn query_paths(&'a self,
-                   mut all_paths: &'a [MPPath],
+                   all_all_paths: &'a [&'a [MPPath]],
                    matching: MPMatching<'a>,
                    mut resp: Vec<MPMatching<'a>>,
+                   root: Option<&'a FSNode<'a>>,
                    ) -> (Vec<MPMatching<'a>>, bool) {
+
+        let rroot: &'a FSNode;
+        if root.is_some() {
+            rroot = root.unwrap();
+        } else {
+            rroot = self;
+        }
+        let (&new_all_paths, new_all_all) = all_all_paths.split_first().unwrap();
+        let mut all_paths = new_all_paths;
 
         let mut unique = false;
         let mut finished = false;
@@ -273,7 +293,10 @@ impl<'a> FSNode<'a> {
                     for (lchild_path, lchild_node) in self.lchildren.borrow().iter()  {
                         let mut new_matching = matching.clone();
                         new_matching.insert(path.value, lchild_path.value);
-                        let (new_resp, new_unique) = lchild_node.query_paths(paths, new_matching, resp);
+                        let mut npaths = vec![paths];
+                        npaths.extend_from_slice(new_all_all);
+                        let qpaths: &[&[MPPath]] = unsafe { mem::transmute( npaths.as_slice() ) };
+                        let (new_resp, new_unique) = lchild_node.query_paths(qpaths, new_matching, resp, Some(rroot));
                         resp = new_resp;
                         unique = new_unique || lchild_path.value.unique;
                     }
@@ -299,12 +322,20 @@ impl<'a> FSNode<'a> {
             }
             if next.is_some() {
                 let next_node = next.unwrap();
-                let (new_resp, new_unique) = next_node.query_paths(paths, matching, resp);
+                let mut npaths = vec![paths];
+                npaths.extend_from_slice(new_all_all);
+                let qpaths: &[&[MPPath]] = unsafe { mem::transmute( npaths.as_slice() ) };
+                let (new_resp, new_unique) = next_node.query_paths(qpaths, matching, resp, Some(rroot));
                 resp = new_resp;
                 unique = new_unique || new_path.value.unique;
             }
         } else {
-            resp.push(matching);
+            if new_all_all.len() > 0 {
+                let (new_resp, _) = rroot.query_paths(new_all_all, matching, resp, None);
+                resp = new_resp;
+            } else {
+                resp.push(matching);
+            }
         }
         (resp, unique)
     }
