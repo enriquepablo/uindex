@@ -1,0 +1,8 @@
+knowledge       = _{ SOI ~ rknowledge ~ EOI }
+
+rknowledge   = { (fact ~ ("<>"|"◊"))+ }
+
+fact        = { (!("<>"|"◊") ~ ANY)+ }
+
+COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }

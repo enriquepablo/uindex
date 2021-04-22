@@ -1,0 +1,20 @@
+[package]
+name = "uindex"
+version = "0.1.0"
+authors = ["Enrique Pérez Arnaud <enrique@cazalla.net>"]
+edition = "2018"
+license = "GPL-3.0+"
+description = "Universal index"
+homepage = "http://uindex.modus_ponens.net"
+documentation = "http://doc.uindex.modus_ponens.net"
+repository = "https://gitlab.com/enriquepablo/uindex"
+readme = "README.md"
+
+[dependencies]
+log = "0.4"
+env_logger = "0.7.1"
+pest = "2.1.3"
+pest_derive = "2.1.0"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0"
