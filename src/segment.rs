@@ -24,7 +24,7 @@ use std::fmt;
 #[derive(Debug, Clone)]
 pub struct MPSegment {
     pub text: String,
-    pub name: String,
+    pub name: u64,
     pub is_leaf: bool,
     pub is_var: bool,
     pub in_var_range: bool,
@@ -33,7 +33,7 @@ pub struct MPSegment {
 }
 
 impl MPSegment {
-    pub fn new(name: String, text: String, is_leaf: bool, is_var: bool, in_var_range: bool, unique: bool) -> MPSegment {
+    pub fn new(name: u64, text: String, is_leaf: bool, is_var: bool, in_var_range: bool, unique: bool) -> MPSegment {
         let is_empty = text.trim().is_empty();
         MPSegment {
             name, text,

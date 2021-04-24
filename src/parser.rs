@@ -62,6 +62,18 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     lexicon: Box::new(Lexicon::new()),
                 }
             }
+            fn calculate_name_hash(&self, name: &str) -> u64 {
+                let mut s = DefaultHasher::new();
+                name.hash(&mut s);
+                s.finish()
+            }
+            fn calculate_hash(&self, name: &str, text: &str, is_leaf: bool) -> u64 {
+                let mut s = DefaultHasher::new();
+                name.hash(&mut s);
+                text.hash(&mut s);
+                is_leaf.hash(&mut s);
+                s.finish()
+            }
 
             pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<kparser::Rule>> {
                 let parse_tree = kparser::KParser::parse(kparser::Rule::knowledge, text)?.next().expect("initial parse tree");
@@ -97,13 +109,16 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 }
                 let rule = parse_tree.as_rule();
                 let name = format!("{:?}", rule);
-                let can_be_var = name.starts_with(constants::VAR_RANGE_PREFIX);
+                let is_var = name == constants::VAR_RULE_NAME;
+                let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+                let unique = name.starts_with(constants::UNIQUE_PREFIX);
                 let mut children = parse_tree.into_inner().peekable();
                 let is_leaf = children.peek().is_none();
-                let segment = self.lexicon.intern_with_name(name, text, is_leaf);
+                let key = self.calculate_hash(name.as_str(), text, is_leaf);
+                let segment = self.lexicon.intern_with_name(self.calculate_name_hash(name.as_str()), text, key, is_leaf, is_var, in_var_range, unique);
                 root_segments.push(segment);
                 let root_ref: &Vec<&MPSegment> = unsafe { mem::transmute( &root_segments ) };
-                if can_be_var || is_leaf {
+                if in_var_range || is_leaf {
                     let segments = root_segments;
                     let new_path = MPPath::new(segments);
                     all_paths.push(new_path);

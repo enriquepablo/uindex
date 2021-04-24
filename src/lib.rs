@@ -84,6 +84,9 @@ pub fn derive_dbase(input: proc_macro::TokenStream) -> TokenStream {
         use std::cell::RefCell;
         use std::mem;
 
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
         use log::{info, trace};
 
         use pest::error::Error;
