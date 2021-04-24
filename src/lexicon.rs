@@ -24,8 +24,6 @@ use std::hash::{Hash, Hasher};
 
 use crate::constants;
 use crate::segment::MPSegment;
-use crate::path::MPPath;
-
 
 
 pub struct Lexicon {
@@ -46,9 +44,6 @@ impl Lexicon {
         text.hash(&mut s);
         is_leaf.hash(&mut s);
         s.finish()
-    }
-    pub fn intern(&self, name: &str, text: &str, is_leaf: bool) -> &MPSegment {
-        self.intern_with_name(name.to_string(), text, is_leaf)
     }
     pub fn intern_with_name(&self, name: String, text: &str, is_leaf: bool) -> &MPSegment {
         let is_var = name == constants::VAR_RULE_NAME;
@@ -71,51 +66,5 @@ impl Lexicon {
         let interned = map.get(&key).unwrap();
 
         unsafe { mem::transmute(interned.as_ref()) }
-    }
-    pub fn intern_with_text(&self, name: &str, text: String, is_leaf: bool) -> &MPSegment {
-        let is_var = name == constants::VAR_RULE_NAME;
-        let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
-        let unique = name.starts_with(constants::UNIQUE_PREFIX);
-
-        let mut map = self.segments.borrow_mut();
-        let key = self.calculate_hash(name, &text, is_leaf);
-
-        if !map.contains_key(&key) {
-            let segment = MPSegment::new(name.to_string(),
-                                         text,
-                                         is_leaf,
-                                         is_var,
-                                         in_var_range,
-                                         unique);
-            map.insert(key, Box::new(segment));
-        }
-        let interned = map.get(&key).unwrap();
-
-        unsafe { mem::transmute(interned.as_ref()) }
-    }
-
-    pub fn make_var(&self, n: usize) -> &MPSegment {
-        let text = format!("<X{}>", &n);
-        self.intern("var", &text, true)
-    }
-    pub fn empty_path(&self) -> MPPath {
-        let root = self.intern("fact", "0", false);
-        let segments = vec![root];
-        MPPath::new(segments)
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_1() {
-        let lexicon = Lexicon::new();
-        let lex1 = lexicon.intern("name1", "text1", true);
-        let _ = lexicon.intern("name2", "text2", true);
-        let lex3 = lexicon.intern("name1", "text1", true);
-        assert_eq!(lex1.name.as_ptr(), lex3.name.as_ptr());
     }
 }

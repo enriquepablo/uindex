@@ -28,7 +28,7 @@ pub fn derive_db() -> TokenStream {
     quote! {
 
         pub struct DB<'a> {
-            mpparser: &'a MPParser<'a>,
+            mpparser: &'a MPParser,
             facts: FactSet<'a>,
         }
         impl<'a> DataBase<'a> for DB<'a> {

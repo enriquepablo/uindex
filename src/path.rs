@@ -20,10 +20,9 @@
 use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt;
-use std::mem;
 
 use crate::segment::MPSegment;
-use crate::matching::{ MPMatching, get_or_key, get_or_key_owning };
+use crate::matching::{ MPMatching, get_or_key };
 
 #[derive(Debug, Clone)]
 pub struct MPPath<'a> {
@@ -51,19 +50,6 @@ impl<'a> MPPath<'a> {
         let lpath = path.len();
         self.len() >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath]
     }
-    pub fn starts_with_slice(&self, path_slice: &'a [&'a MPSegment]) -> bool {
-        let lpath = path_slice.len();
-        self.len() >= lpath && self.segments[0..lpath] == path_slice[0..lpath]
-    }
-    pub fn sub_path(&'a self, lpath: usize) -> MPPath<'a> {
-        let new_segments = &self.segments[0..lpath];
-        MPPath::new(new_segments.to_vec())
-    }
-    pub fn sub_slice(&'a self, lpath: usize) -> (&'a [&'a MPSegment], &'a MPSegment) {
-        let segments = &self.segments[0..lpath];
-        (segments, segments.last().expect("no empty paths"))
-    }
-
     pub fn paths_after(&'a self, paths: &'a [MPPath]) -> usize {
         let mut seen = false;
         let mut path_starts_with_self: bool;
@@ -84,22 +70,6 @@ impl<'a> MPPath<'a> {
         i as usize
     }
 
-
-    pub fn paths_after_slice(path_slice: &'a [&'a MPSegment], paths: &'a [MPPath<'a>]) -> &'a [MPPath<'a>] {
-        let mut i: u16 = 0;
-        for path in paths {
-            if path.value.is_empty || !path.value.is_leaf {
-                i += 1;
-                continue;
-            }
-            if !path.starts_with_slice(path_slice) {
-                break;
-            }
-            i += 1;
-        }
-        &paths[i as usize..]
-    }
-
     pub fn substitute(&'a self, matching: &'a MPMatching) -> MPPath {
         let mut new_segments = Vec::with_capacity(self.segments.len());
         for segment in self.segments.iter() {
@@ -110,102 +80,6 @@ impl<'a> MPPath<'a> {
             }
         }
         MPPath::new(new_segments)
-    }
-
-    pub fn substitute_to_string(&'a self, matching: &'a MPMatching) -> (&str, bool, Option<MPPath>) {
-        let mut last_text = "";
-        let mut is_leaf = false;
-        let mut old_segments = Vec::with_capacity(self.segments.len());
-        let mut is_new = false;
-        for segment in self.segments.iter() {
-            let new_segment = get_or_key(&matching, &segment);
-            is_new = &new_segment != segment;
-            last_text = new_segment.text.as_str();
-            is_leaf = new_segment.is_leaf;
-            old_segments.push(*segment);
-            if is_new {
-                break;
-            }
-        }
-        if is_new {
-            let old_path = MPPath::new(old_segments);
-            (last_text, is_leaf, Some(old_path))
-        } else {
-            (last_text, is_leaf, None)
-        }
-    }
-
-    pub fn substitute_owning(&'a self, matching: MPMatching<'a>) -> (MPPath, Option<MPPath>) {
-        let mut new_segments = Vec::with_capacity(self.segments.len());
-        let mut old_segments = Vec::with_capacity(self.segments.len());
-        let mut is_new = false;
-        for segment in self.segments.iter() {
-            let new_segment = get_or_key_owning(matching.clone(), &segment);
-            is_new = &new_segment != segment;
-            new_segments.push(new_segment);
-            old_segments.push(*segment);
-            if is_new {
-                break;
-            }
-        }
-        if is_new {
-            new_segments.shrink_to_fit();
-            old_segments.shrink_to_fit();
-            let new_path = MPPath::new(new_segments);
-            let old_path = MPPath::new(old_segments);
-            (new_path, Some(old_path))
-        } else {
-            (MPPath::new(new_segments), None)
-        }
-    }
-
-    pub fn substitute_paths_to_string(paths: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (String, MPMatching<'a>) {
-        let mut fact = String::with_capacity(paths.len());
-        let mut old_paths:Vec<MPPath> = Vec::with_capacity(paths.len());
-        for path in paths.iter() {
-            let mut seen = false;
-            for opath in old_paths.iter() {
-                if path.len() > opath.len() && path.starts_with(opath) {
-                    seen = true;
-                    break;
-                }
-            }
-            if !seen {
-                let (new_text, is_leaf, old_path) = path.substitute_to_string(&matching);
-                if old_path.is_some() {
-                    old_paths.push(old_path.unwrap());
-                    fact.push_str(new_text);
-                } else if is_leaf {
-                    fact.push_str(new_text);
-                }
-            }
-        }
-        (fact, matching)
-    }
-
-    pub fn substitute_paths_owning(paths: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> Vec<MPPath<'a>> {
-        let mut new_paths: Vec<MPPath> = Vec::with_capacity(paths.len());
-        let mut old_paths: Vec<MPPath> = Vec::with_capacity(paths.len());
-        for path in paths.iter() {
-            let mut seen = false;
-            for opath in old_paths.iter() {
-                if path.len() > opath.len() && path.starts_with(opath) {
-                    seen = true;
-                    break;
-                }
-            }
-            if !seen {
-                let (new_path, old_path) = path.substitute_owning(matching.clone());
-                if old_path.is_some() {
-                    old_paths.push(old_path.unwrap());
-                    new_paths.push(new_path);
-                } else if new_path.value.is_leaf {
-                    new_paths.push(new_path);
-                }
-            }
-        }
-        new_paths.shrink_to_fit();
-        unsafe { mem::transmute(new_paths) }
     }
 }
 

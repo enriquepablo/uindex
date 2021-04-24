@@ -93,7 +93,7 @@ pub fn derive_dbase(input: proc_macro::TokenStream) -> TokenStream {
         use uindex::facttree::FactSet;
         use uindex::kbase::{ DataBase, DBGen };
         use uindex::lexicon::Lexicon;
-        use uindex::matching::{ MPMatching, get_real_matching};
+        use uindex::matching::{ MPMatching };
         use uindex::path::MPPath;
         use uindex::segment::MPSegment;
         use uindex::kparser;

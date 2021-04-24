@@ -23,15 +23,6 @@ use crate::segment::MPSegment;
 
 pub type MPMatching<'a> = HashMap<&'a MPSegment, &'a MPSegment>;
 
-/// XXX check how people do this
-pub fn invert<'a>(matching: &'a MPMatching) -> MPMatching<'a> {
-    let mut inverted: MPMatching = HashMap::with_capacity(matching.capacity());
-    for (key, value) in matching {
-        inverted.insert(value, key);
-    }
-    inverted
-}
-
 pub fn get_or_key<'a>(matching: &'a MPMatching, key: &'a MPSegment) -> &'a MPSegment {
     match matching.get(key) {
         Some(matched) => {
@@ -41,26 +32,4 @@ pub fn get_or_key<'a>(matching: &'a MPMatching, key: &'a MPSegment) -> &'a MPSeg
             key
         }
     }
-}
-
-
-pub fn get_or_key_owning<'a>(matching: MPMatching<'a>, key: &'a MPSegment) -> &'a MPSegment {
-    match matching.get(key) {
-        Some(matched) => {
-            matched
-            },
-        None => {
-            key
-        }
-    }
-}
-
-
-pub fn get_real_matching<'a>(matching: &MPMatching<'a>, varmap: &MPMatching<'a>) -> MPMatching<'a> {
-    let mut real_matching: MPMatching = HashMap::with_capacity(matching.len());
-    for (key, value) in matching {
-        let new_key = varmap.get(key).unwrap();
-        real_matching.insert(&new_key, &value);
-    }
-    real_matching
 }

@@ -47,27 +47,19 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
             }
         }
 
-        pub struct MPParser<'a> {
+        pub struct MPParser {
             pub lexicon: Box<Lexicon>,
-            pub flexicon: StringCache,
-            pub math: StringCache,
-            pub factstr: StringCache,
-            dummy: &'a str,
         }
 
         #[derive(Parser)]
         #attr
         pub struct FactParser;
 
-        impl<'a> MPParser<'a> {
+        impl<'a> MPParser {
 
-            pub fn new() -> MPParser<'a> {
+            pub fn new() -> MPParser {
                 MPParser {
                     lexicon: Box::new(Lexicon::new()),
-                    flexicon: StringCache::new(),
-                    math: StringCache::new(),
-                    factstr: StringCache::new(),
-                    dummy: "",
                 }
             }
 
@@ -125,51 +117,6 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     new_index += 1;
                 }
                 all_paths
-            }
-            pub fn substitute_fact(&'a self, fact: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (Vec<MPPath<'a>>, MPMatching<'a>, Option<String>) {
-                if matching.len() == 0 {
-                    return (fact, matching, None);
-                }
-                let (text, matching) = MPPath::substitute_paths_to_string(fact, matching);
-
-                let stext = unsafe { mem::transmute( text.as_str() ) };
-                
-                let parse_tree = FactParser::parse(Rule::fact, stext).ok().unwrap().next().expect("2nd fact pair");
-                (self.visit_parse_node(parse_tree,
-                                       vec![],
-                                       vec![],
-                                       0),
-                matching, Some(text))
-
-
-            }
-            pub fn substitute_fact_fast(&'a self, fact: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> Vec<MPPath<'a>> {
-                if matching.len() == 0 {
-                    return fact;
-                }
-                MPPath::substitute_paths_owning(fact, matching)
-            }
-            pub fn normalize_fact (&'a self, fact: Vec<MPPath<'a>>) -> (MPMatching<'a>, Vec<MPPath<'a>>) {
-                let mut varmap: MPMatching<'a> = HashMap::new();
-                let mut invarmap: MPMatching<'a> = HashMap::new();
-                let mut counter = 1;
-                let leaves = fact.as_slice();
-                for path in leaves {
-                    if path.value.is_empty || !path.value.is_leaf {
-                        continue;
-                    }
-                    if path.value.is_var {
-                        let old_var = varmap.get(&path.value);
-                        if old_var.is_none() {
-                            let new_var = self.lexicon.make_var(counter);
-                            counter += 1;
-                            varmap.insert(path.value, new_var);
-                            invarmap.insert(new_var, path.value);
-                        }
-                    }
-                }
-                let new_fact = self.substitute_fact_fast(fact, varmap);
-                (invarmap, new_fact)
             }
         }
     }
