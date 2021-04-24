@@ -24,6 +24,7 @@ use std::mem;
 
 use crate::constants;
 use crate::path::MPPath;
+use crate::segment::MPSegment;
 use crate::matching::MPMatching;
 
 
@@ -40,12 +41,6 @@ impl<'a> CarryOver<'a> {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct FSNode<'a> {
-    children: RefCell<HashMap<MPPath<'a>, &'a FSNode<'a>>>,
-    lchildren: RefCell<HashMap<MPPath<'a>, &'a FSNode<'a>>>,
-}
-
 pub struct FactSet<'a> {
     pub root: Box<FSNode<'a>>,
 }
@@ -54,7 +49,7 @@ pub struct FactSet<'a> {
 impl<'a> FactSet<'a> {
     pub fn new () -> FactSet<'a> {
         FactSet {
-            root: Box::new(FSNode::new(1)),
+            root: Box::new(FSNode::new(1, None)),
          }
     }
     pub fn add_fact (&'a self, fact: Vec<MPPath<'a>>) {
@@ -97,7 +92,7 @@ impl<'a> FactSet<'a> {
             }
             depth += 1;
             if path.value.in_var_range {
-                let (opt_child, path) = parent.get_lchild(path);
+                let opt_child = parent.get_lchild(path.identity);
                 let reindex = path.paths_after(&paths);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
@@ -111,8 +106,10 @@ impl<'a> FactSet<'a> {
                     self.create_paths(parent, paths, depth, carry, path_index);
                     return;
                 } else {
-                    let child_node = FSNode::new(depth);
-                    let (new_child, new_carry) = self.intern_lchild(parent, path, child_node, carry, path_index);
+                    let unique_child = path.value.unique;
+                    let path_id = path.identity;
+                    let child_node = FSNode::new(depth, Some(path.value));
+                    let (new_child, new_carry) = self.intern_lchild(parent, path_id, unique_child, child_node, carry, path_index);
                     child = new_child;
                     carry = new_carry;
 
@@ -121,7 +118,8 @@ impl<'a> FactSet<'a> {
                     continue;
                 }
             } else {
-                let (opt_child, path) = parent.get_child(path);
+                let path_id = path.identity;
+                let opt_child = parent.get_child(path_id);
                 if opt_child.is_none() {
                     paths.insert(0, path);
                     self.create_paths(parent, paths, depth, carry, path_index);
@@ -150,17 +148,19 @@ impl<'a> FactSet<'a> {
                 continue;
             }
             depth += 1;
-            let child_node = FSNode::new(depth);
+            let path_id = path.identity;
+            let unique_child = path.value.unique;
             let logic_node = path.value.in_var_range;
-            let real_index = path_index + offset;
-            let reindex = path.paths_after(&paths);
             let is_leaf = path.value.is_leaf;
+            let reindex = path.paths_after(&paths);
+            let child_node = FSNode::new(depth, Some(path.value));
+            let real_index = path_index + offset;
             if logic_node {
-                let (new_child, new_carry) = self.intern_lchild(parent, path, child_node, carry, real_index);
+                let (new_child, new_carry) = self.intern_lchild(parent, path_id, unique_child, child_node, carry, real_index);
                 child = new_child;
                 carry = new_carry;
             } else {
-                let (new_child, new_carry) = self.intern_child(parent, path, child_node, carry, real_index);
+                let (new_child, new_carry) = self.intern_child(parent, path_id, child_node, carry, real_index);
                 child = new_child;
                 carry = new_carry;
             };
@@ -175,7 +175,7 @@ impl<'a> FactSet<'a> {
     }
     pub fn intern_child(&'a self,
                         parent: &'a FSNode<'a>,
-                        path: MPPath<'a>,
+                        path_id: u64,
                         child: FSNode<'a>,
                         mut carry: CarryOver<'a>,
                         index: usize,
@@ -185,14 +185,15 @@ impl<'a> FactSet<'a> {
         let (new_carry, more) = carry.node(index);
         carry = new_carry;
         if more.is_some() {
-            more.unwrap().children.borrow_mut().insert(path.clone(), child_ref);
+            more.unwrap().children.borrow_mut().insert(path_id, child_ref);
         }
-        parent.children.borrow_mut().insert(path, child_ref);
+        parent.children.borrow_mut().insert(path_id, child_ref);
         (child_ref, carry)
     }
     pub fn intern_lchild(&'a self,
                          parent: &'a FSNode<'a>,
-                         path: MPPath<'a>,
+                         path_id: u64,
+                         unique_child: bool,
                          child: FSNode<'a>,
                          mut carry: CarryOver<'a>,
                          index: usize,
@@ -201,49 +202,57 @@ impl<'a> FactSet<'a> {
         let (new_carry, more) = carry.node(index);
         carry = new_carry;
         if more.is_some() {
-            more.unwrap().lchildren.borrow_mut().insert(path.clone(), child_ref);
+            more.unwrap().lchildren.borrow_mut().insert(path_id, child_ref);
         }
         let mut map = parent.lchildren.borrow_mut();
-        if path.value.unique {
+        if unique_child {
             map.clear();
         }
-        map.insert(path, child_ref);
+        map.insert(path_id, child_ref);
         (child_ref, carry)
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct FSNode<'a> {
+    children: RefCell<HashMap<u64, &'a FSNode<'a>>>,
+    lchildren: RefCell<HashMap<u64, &'a FSNode<'a>>>,
+    value: Option<&'a MPSegment>,
+}
+
 impl<'a> FSNode<'a> {
-    pub fn new(depth: usize) -> FSNode<'a> {
+    pub fn new(depth: usize, value: Option<&'a MPSegment>) -> FSNode<'a> {
         let capacity = constants::NODE_MAP_CAPACITY / depth;
         FSNode { 
             children: RefCell::new(HashMap::with_capacity(capacity)),
             lchildren: RefCell::new(HashMap::with_capacity(capacity)),
+            value
         }
     }
-    pub fn get_child(&'a self, path: MPPath<'a>) -> (Option<&'a Self>, MPPath<'a>) {
+    pub fn get_child(&'a self, path_id: u64) -> Option<&'a Self> {
         let children = self.children.borrow();
-        match children.get(&path) {
-            None => (None, path),
-            Some(child_ref) => (Some(*child_ref), path)
+        match children.get(&path_id) {
+            None => None,
+            Some(child_ref) => Some(*child_ref)
         }
     }
-    pub fn get_lchild(&'a self, path: MPPath<'a>) -> (Option<&'a Self>, MPPath<'a>) {
+    pub fn get_lchild(&'a self, path_id: u64) -> Option<&'a Self> {
         let children = self.lchildren.borrow();
-        match children.get(&path) {
-            None => (None, path),
-            Some(child_ref) => (Some(*child_ref), path)
+        match children.get(&path_id) {
+            None => None,
+            Some(child_ref) => Some(*child_ref)
         }
     }
     pub fn get_child_r(&'a self, path: &'a MPPath<'a>) -> Option<&'a Self> {
         let children = self.children.borrow();
-        match children.get(path) {
+        match children.get(&path.identity) {
             None => None,
             Some(child_ref) => Some(*child_ref)
         }
     }
     pub fn get_lchild_r(&'a self, path: &'a MPPath<'a>) -> Option<&'a Self> {
         let children = self.lchildren.borrow();
-        match children.get(path) {
+        match children.get(&path.identity) {
             None => None,
             Some(child_ref) => Some(*child_ref)
         }
@@ -290,15 +299,15 @@ impl<'a> FSNode<'a> {
             let paths = next_paths.unwrap();
             if path.value.is_var {
                 if !matching.contains_key(&path.value) {
-                    for (lchild_path, lchild_node) in self.lchildren.borrow().iter()  {
+                    for lchild_node in self.lchildren.borrow().values()  {
                         let mut new_matching = matching.clone();
-                        new_matching.insert(path.value, lchild_path.value);
+                        new_matching.insert(path.value, lchild_node.value.unwrap());
                         let mut npaths = vec![paths];
                         npaths.extend_from_slice(new_all_all);
                         let qpaths: &[&[MPPath]] = unsafe { mem::transmute( npaths.as_slice() ) };
                         let (new_resp, new_unique) = lchild_node.query_paths(qpaths, new_matching, resp, Some(rroot));
                         resp = new_resp;
-                        unique = new_unique || lchild_path.value.unique;
+                        unique = new_unique || lchild_node.value.unwrap().unique;
                     }
                     return (resp, unique);
                 } else {

@@ -56,7 +56,7 @@ impl Hash for TSegment {
 pub struct MPPath<'a> {
     pub value: &'a MPSegment,
     pub segments: Vec<TSegment>,
-    identity: u64,
+    pub identity: u64,
 }
 
 impl<'a> MPPath<'a> {
