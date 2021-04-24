@@ -62,9 +62,16 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     lexicon: Box::new(Lexicon::new()),
                 }
             }
-            fn calculate_hash(&self, text: &str) -> u64 {
+            fn calculate_name_hash(&self, name: &str) -> u64 {
                 let mut s = DefaultHasher::new();
+                name.hash(&mut s);
+                s.finish()
+            }
+            fn calculate_hash(&self, name: &str, text: &str, is_leaf: bool) -> u64 {
+                let mut s = DefaultHasher::new();
+                name.hash(&mut s);
                 text.hash(&mut s);
+                is_leaf.hash(&mut s);
                 s.finish()
             }
 
@@ -102,21 +109,24 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 }
                 let rule = parse_tree.as_rule();
                 let name = format!("{:?}", rule);
-                let can_be_var = name.starts_with(constants::VAR_RANGE_PREFIX);
+                let is_var = name == constants::VAR_RULE_NAME;
+                let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+                let unique = name.starts_with(constants::UNIQUE_PREFIX);
                 let mut children = parse_tree.into_inner().peekable();
                 let is_leaf = children.peek().is_none();
                 let mut new_root_segments: Option<Vec<TSegment>> = None;
                 if !is_leaf {
                     let mut pre_new_root_segments = root_segments.clone();
-                    let text_hash = self.calculate_hash(text);
-                    let name_hash = self.calculate_hash(name.as_str());
+                    let text_hash = self.calculate_name_hash(text);
+                    let name_hash = self.calculate_name_hash(name.as_str());
                     let tsegment = TSegment { name: name_hash, text: text_hash };
                     pre_new_root_segments.push(tsegment);
                     new_root_segments = Some(pre_new_root_segments);
                 }
-                if can_be_var || is_leaf {
-                    let value = self.lexicon.intern_with_name(name, text, is_leaf);
-                    let new_path = MPPath::new(root_segments, value);
+                if in_var_range || is_leaf {
+                    let key = self.calculate_hash(name.as_str(), text, is_leaf);
+                    let segment = self.lexicon.intern_with_name(self.calculate_name_hash(name.as_str()), text, key, is_leaf, is_var, in_var_range, unique);
+                    let new_path = MPPath::new(root_segments, segment);
                     all_paths.push(new_path);
                 }
                 let mut new_index = 0;
