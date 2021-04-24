@@ -45,8 +45,27 @@ fn main() {
     let f3 = "sue ISA0 animal ◊";
     db.tell( f3 );
 
-    let q = "sue ISA0 <X1> ◊ john ISA0 <X1> ◊";
-    let resp = db.ask( q );
+    let f4 = "mary ISA0 animal ◊";
+    db.tell( f4 );
 
-    println!("{:#?}", resp);
+    let f5 = "john ISA0 philosopher ◊";
+    db.tell( f5 );
+
+    let f6 = "sue ISA0 person ◊";
+    db.tell( f6 );
+
+    let q1 = "john ISA0 <X1> ◊";
+    let resp1 = db.ask( q1 );
+
+    println!("John ISA\n\n{:#?}", resp1);
+
+    let q2 = "sue ISA0 <X1> ◊ john ISA0 <X1> ◊";
+    let resp2 = db.ask( q2 );
+
+    println!("John and SUE ISA\n\n{:#?}", resp2);
+
+    let q3 = "sue ISA0 <X1> ◊ john ISA0 <X1> ◊ mary ISA0 <X1> ◊";
+    let resp3 = db.ask( q3 );
+
+    println!("John and SUE and mary ISA\n\n{:#?}", resp3);
 }
