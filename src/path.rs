@@ -24,21 +24,48 @@ use std::fmt;
 use crate::segment::MPSegment;
 use crate::matching::{ MPMatching, get_or_key };
 
+
+#[derive(Debug, Clone)]
+pub struct TSegment {
+    pub name: u64,
+    pub text: u64,
+}
+
+impl fmt::Display for TSegment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.text)
+    }
+}
+
+impl PartialEq for TSegment {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.text == other.text
+    }
+}
+
+impl Eq for TSegment {}
+
+impl Hash for TSegment {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.text.hash(state);
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MPPath<'a> {
     pub value: &'a MPSegment,
-    pub segments: Vec<&'a MPSegment>,
+    pub segments: Vec<TSegment>,
     identity: u64,
 }
 
 impl<'a> MPPath<'a> {
-    pub fn new(segments: Vec<&'a MPSegment>) -> MPPath {
-        let value = *segments.last().expect("no empty paths");
+    pub fn new(segments: Vec<TSegment>, value: &'a MPSegment) -> MPPath {
         let mut hasher = DefaultHasher::new();
-        for &segment in segments.iter() {
+        for segment in segments.iter() {
             segment.name.hash(&mut hasher);
         }
-        // XXX is this redundant??
+        value.name.hash(&mut hasher);
         value.text.hash(&mut hasher);
         let identity = hasher.finish();
         MPPath { value, segments, identity }
@@ -71,15 +98,9 @@ impl<'a> MPPath<'a> {
     }
 
     pub fn substitute(&'a self, matching: &'a MPMatching) -> MPPath {
-        let mut new_segments = Vec::with_capacity(self.segments.len());
-        for segment in self.segments.iter() {
-            let new_segment = get_or_key(&matching, &segment);
-            new_segments.push(new_segment);
-            if &new_segment != segment {
-                break;
-            }
-        }
-        MPPath::new(new_segments)
+        let new_segments = self.segments.clone();
+        let new_value = get_or_key(&matching, &self.value);
+        MPPath::new(new_segments, new_value)
     }
 }
 

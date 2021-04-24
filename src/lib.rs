@@ -84,6 +84,9 @@ pub fn derive_dbase(input: proc_macro::TokenStream) -> TokenStream {
         use std::cell::RefCell;
         use std::mem;
 
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
         use log::{info, trace};
 
         use pest::error::Error;
@@ -94,7 +97,7 @@ pub fn derive_dbase(input: proc_macro::TokenStream) -> TokenStream {
         use uindex::kbase::{ DataBase, DBGen };
         use uindex::lexicon::Lexicon;
         use uindex::matching::{ MPMatching };
-        use uindex::path::MPPath;
+        use uindex::path::{ TSegment, MPPath };
         use uindex::segment::MPSegment;
         use uindex::kparser;
         use uindex::parse_result::ParseResult;

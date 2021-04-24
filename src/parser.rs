@@ -62,6 +62,11 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     lexicon: Box::new(Lexicon::new()),
                 }
             }
+            fn calculate_hash(&self, text: &str) -> u64 {
+                let mut s = DefaultHasher::new();
+                text.hash(&mut s);
+                s.finish()
+            }
 
             pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<kparser::Rule>> {
                 let parse_tree = kparser::KParser::parse(kparser::Rule::knowledge, text)?.next().expect("initial parse tree");
@@ -87,7 +92,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
 
             fn visit_parse_node(&'a self,
                                 parse_tree: Pair<'a, Rule>,
-                                mut root_segments: Vec<&'a MPSegment>,
+                                mut root_segments: Vec<TSegment>,
                                 mut all_paths: Vec<MPPath<'a>>,
                                 index: usize,
                             ) -> Vec<MPPath> {
@@ -100,21 +105,30 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 let can_be_var = name.starts_with(constants::VAR_RANGE_PREFIX);
                 let mut children = parse_tree.into_inner().peekable();
                 let is_leaf = children.peek().is_none();
-                let segment = self.lexicon.intern_with_name(name, text, is_leaf);
-                root_segments.push(segment);
-                let root_ref: &Vec<&MPSegment> = unsafe { mem::transmute( &root_segments ) };
+                let mut new_root_segments: Option<Vec<TSegment>> = None;
+                if !is_leaf {
+                    let mut pre_new_root_segments = root_segments.clone();
+                    let text_hash = self.calculate_hash(text);
+                    let name_hash = self.calculate_hash(name.as_str());
+                    let tsegment = TSegment { name: name_hash, text: text_hash };
+                    pre_new_root_segments.push(tsegment);
+                    new_root_segments = Some(pre_new_root_segments);
+                }
                 if can_be_var || is_leaf {
-                    let segments = root_segments;
-                    let new_path = MPPath::new(segments);
+                    let value = self.lexicon.intern_with_name(name, text, is_leaf);
+                    let new_path = MPPath::new(root_segments, value);
                     all_paths.push(new_path);
                 }
                 let mut new_index = 0;
-                for child in children {
-                    all_paths = self.visit_parse_node(child,
-                                                      root_ref.clone(),
-                                                      all_paths,
-                                                      new_index);
-                    new_index += 1;
+                if !is_leaf {
+                    let next_root_segments = new_root_segments.unwrap();
+                    for child in children {
+                        all_paths = self.visit_parse_node(child,
+                                                          next_root_segments.clone(),
+                                                          all_paths,
+                                                          new_index);
+                        new_index += 1;
+                    }
                 }
                 all_paths
             }
