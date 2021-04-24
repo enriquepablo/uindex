@@ -93,15 +93,13 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 let parse_tree = FactParser::parse(Rule::fact, text).ok().expect("fact pairset").next().expect("fact pair");
                 self.visit_parse_node(parse_tree,
                                       vec![],
-                                      vec![],
-                                      0)
+                                      vec![])
             }
 
             fn visit_parse_node(&'a self,
                                 parse_tree: Pair<'a, Rule>,
                                 mut root_segments: Vec<TSegment>,
                                 mut all_paths: Vec<MPPath<'a>>,
-                                index: usize,
                             ) -> Vec<MPPath> {
                 let text = parse_tree.as_str();
                 if text.is_empty() {
@@ -129,15 +127,12 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     let new_path = MPPath::new(root_segments, segment);
                     all_paths.push(new_path);
                 }
-                let mut new_index = 0;
                 if !is_leaf {
                     let next_root_segments = new_root_segments.unwrap();
                     for child in children {
                         all_paths = self.visit_parse_node(child,
                                                           next_root_segments.clone(),
-                                                          all_paths,
-                                                          new_index);
-                        new_index += 1;
+                                                          all_paths);
                     }
                 }
                 all_paths
