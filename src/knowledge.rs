@@ -28,7 +28,7 @@ pub fn derive_db() -> TokenStream {
     quote! {
 
         pub struct DB<'a> {
-            mpparser: &'a MPParser,
+            mpparser: MPParser,
             facts: FactSet<'a>,
         }
         impl<'a> DataBase<'a> for DB<'a> {
@@ -59,7 +59,7 @@ pub fn derive_db() -> TokenStream {
 
             pub fn new () -> DB<'a> {
                 Self {
-                    mpparser: Box::leak(Box::new(MPParser::new())),
+                    mpparser: MPParser::new(),
                     facts: FactSet::new(),
                 }
             }
