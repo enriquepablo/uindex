@@ -40,6 +40,7 @@
 //!
 
 #![feature(hash_set_entry)]
+#![feature(once_cell)]
 #![allow(dead_code)]
 
 
