@@ -1,20 +1,20 @@
-// Copyright (c) 2020 by Enrique Pérez Arnaud <enrique at cazalla.net>    
-//    
-// This file is part of the uindex project.    
-// http://www.uindex.net    
-//    
-// The uindex project is free software: you can redistribute it and/or modify    
-// it under the terms of the GNU General Public License as published by    
-// the Free Software Foundation, either version 3 of the License, or    
-// (at your option) any later version.    
-//    
-// The uindex project is distributed in the hope that it will be useful,    
-// but WITHOUT ANY WARRANTY; without even the implied warranty of    
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the    
-// GNU General Public License for more details.    
-//    
-// You should have received a copy of the GNU General Public License    
-// along with any part of the uindex project.    
+// Copyright (c) 2020 by Enrique Pérez Arnaud <enrique at cazalla.net>
+//
+// This file is part of the uindex project.
+// http://www.uindex.net
+//
+// The uindex project is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The uindex project is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with any part of the uindex project.
 // If not, see <http://www.gnu.org/licenses/>.
 //!
 //! uindex generates inference engines on top of Parsing Expression Grammars (PEGs).
@@ -27,7 +27,7 @@
 //! and structural detail you may feel appropriate,
 //! and to query and massage it efficiently
 //! at any level of the detail you may have bothered to specify.
-//! 
+//!
 //! On the other hand, uindex allows you to develop programs
 //! under the paradigm of logic programming,
 //! with a syntax that is exactly as expressive and clear as you care to specify.
@@ -43,20 +43,18 @@
 #![feature(once_cell)]
 #![allow(dead_code)]
 
-
 pub mod constants;
-pub mod segment;
 pub mod matching;
 pub mod path;
+pub mod segment;
 //pub mod fact;
-mod parser;
 pub mod facttree;
-mod knowledge;
-pub mod lexicon;
 pub mod kbase;
+mod knowledge;
 pub mod kparser;
+pub mod lexicon;
 pub mod parse_result;
-
+mod parser;
 
 extern crate pest;
 #[macro_use]
@@ -69,7 +67,6 @@ extern crate quote;
 extern crate syn;
 
 use proc_macro2::TokenStream;
-
 
 pub fn derive_dbase(input: proc_macro::TokenStream) -> TokenStream {
     let ast: syn::DeriveInput = syn::parse(input).unwrap();

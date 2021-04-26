@@ -1,29 +1,28 @@
-// Copyright (c) 2020 by Enrique Pérez Arnaud <enrique at cazalla.net>    
-//    
-// This file is part of the modus_ponens project.    
-// http://www.modus_ponens.net    
-//    
-// The modus_ponens project is free software: you can redistribute it and/or modify    
-// it under the terms of the GNU General Public License as published by    
-// the Free Software Foundation, either version 3 of the License, or    
-// (at your option) any later version.    
-//    
-// The modus_ponens project is distributed in the hope that it will be useful,    
-// but WITHOUT ANY WARRANTY; without even the implied warranty of    
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the    
-// GNU General Public License for more details.    
-//    
-// You should have received a copy of the GNU General Public License    
-// along with any part of the modus_ponens project.    
+// Copyright (c) 2020 by Enrique Pérez Arnaud <enrique at cazalla.net>
+//
+// This file is part of the modus_ponens project.
+// http://www.modus_ponens.net
+//
+// The modus_ponens project is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The modus_ponens project is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with any part of the modus_ponens project.
 // If not, see <http://www.gnu.org/licenses/>.
 
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
+use crate::matching::{get_or_key, MPMatching};
 use crate::segment::MPSegment;
-use crate::matching::{ MPMatching, get_or_key };
-
 
 #[derive(Debug, Clone)]
 pub struct TSegment {
@@ -68,7 +67,11 @@ impl<'a> MPPath<'a> {
         value.name.hash(&mut hasher);
         value.text.hash(&mut hasher);
         let identity = hasher.finish();
-        MPPath { value, segments, identity }
+        MPPath {
+            value,
+            segments,
+            identity,
+        }
     }
     pub fn len(&self) -> usize {
         self.segments.len()
@@ -103,7 +106,6 @@ impl<'a> MPPath<'a> {
         MPPath::new(new_segments, new_value)
     }
 }
-
 
 impl<'a> fmt::Display for MPPath<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
