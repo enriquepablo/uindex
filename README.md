@@ -48,13 +48,13 @@ Now we want to specify which of our productions can be unknowns in our queries.
 We transform our grammar as follows:
 
 ```pest
-var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+var         = @{ "X" ~ ('0'..'9')+ }
 
 fact        = { word ~ word ~ word }
 
 v_word      = @{ ASCII_ALPHANUMERIC+ }
 
-word        = _{ v_word | var }
+word        = _{ var | v_word }
 
 WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 ```
@@ -131,10 +131,10 @@ Finally we can query the system like:
 ```rust
 kb.ask("john likes oranges.");  // -> true
 kb.ask("john likes apples.");  // -> false
-kb.ask("susan likes <X1>.");  // -> [{<X1>: oranges}, {<X1>: apples}]
-kb.ask("<X1> likes oranges. <X1> likes apples.");  // -> [{<X1>: susan}]
-kb.ask("susan likes <X1>. john likes <X1>.");  // -> [{<X1>: oranges}]
-kb.ask("susan <X1> apples. john <X1> apples.");  // -> []
+kb.ask("susan likes X1.");  // -> [{<X1>: oranges}, {<X1>: apples}]
+kb.ask("X1 likes oranges. X1 likes apples.");  // -> [{<X1>: susan}]
+kb.ask("susan likes X1. john likes X1.");  // -> [{<X1>: oranges}]
+kb.ask("susan X1 apples. john X1 apples.");  // -> []
 ```
 
 And that's it.
