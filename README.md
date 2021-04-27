@@ -154,7 +154,7 @@ Note that this is a work in progress. At the moment uindex does not even have pe
 it only exists in memory. There is also room for improvement in the sizes of the dbs,
 and queries would benefit by using some parallellism.
 
-&copy; EnriquePérez Arnaud <enrique at cazalla dot net> 2021
+&copy; EnriquePérez Arnaud &lt;enrique at cazalla dot net&gt; 2021
 
 [0]:https://uindex.modus_ponens.net
 [1]:https://en.wikipedia.org/wiki/Parsing_expression_grammar
