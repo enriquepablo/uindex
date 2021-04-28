@@ -110,7 +110,7 @@ create databases that can hold sentences according to ``grammar.pest``.
 So now we can build a database:
 
 ```rust
-let kb = DBGenerator::gen_kb();
+let db = DBGenerator::gen_db();
 ```
 &nbsp;
 &nbsp;
@@ -118,10 +118,10 @@ let kb = DBGenerator::gen_kb();
 We can add data to it:
 
 ```rust
-kb.tell("susan likes oranges.");
-kb.tell("susan likes apples.");
-kb.tell("john likes oranges.");
-kb.tell("john hates apples.");
+db.tell("susan likes oranges.");
+db.tell("susan likes apples.");
+db.tell("john likes oranges.");
+db.tell("john hates apples.");
 ```
 &nbsp;
 &nbsp;
@@ -129,12 +129,12 @@ kb.tell("john hates apples.");
 Finally we can query the system like:
 
 ```rust
-kb.ask("john likes oranges.");  // -> true
-kb.ask("john likes apples.");  // -> false
-kb.ask("susan likes X1.");  // -> [{<X1>: oranges}, {<X1>: apples}]
-kb.ask("X1 likes oranges. X1 likes apples.");  // -> [{<X1>: susan}]
-kb.ask("susan likes X1. john likes X1.");  // -> [{<X1>: oranges}]
-kb.ask("susan X1 apples. john X1 apples.");  // -> []
+db.ask("john likes oranges.");  // -> true
+db.ask("john likes apples.");  // -> false
+db.ask("susan likes X1.");  // -> [{<X1>: oranges}, {<X1>: apples}]
+db.ask("X1 likes oranges. X1 likes apples.");  // -> [{<X1>: susan}]
+db.ask("susan likes X1. john likes X1.");  // -> [{<X1>: oranges}]
+db.ask("susan X1 apples. john X1 apples.");  // -> []
 ```
 
 And that's it.
