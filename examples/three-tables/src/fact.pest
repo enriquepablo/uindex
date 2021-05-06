@@ -1,0 +1,28 @@
+fact       = { (user | address | town) }
+
+var         = @{ "X" ~ ASCII_DIGIT* }
+
+v_number    = @{ ASCII_DIGIT+ }
+number      = _{ var | v_number }  
+
+v_name      = @{ ASCII_ALPHA+ ~ ASCII_DIGIT* }
+name        = _{ var | v_name }
+
+userid      = _{ name }
+given_name  = _{ name }
+surname     = _{ name }
+
+user        = { "U" ~ given_name ~ surname ~ userid }
+
+street      = _{ name }
+st_number   = _{ number }
+city        = _{ name }
+
+address     = { "A" ~ userid ~ street ~ st_number ~ city }
+
+population  = _{ number }
+country     = _{ name }
+
+town        = { "T" ~ city ~ population ~ country }
+
+WHITESPACE  = _{ (" " | "\t" | NEWLINE)+ }

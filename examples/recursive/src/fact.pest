@@ -1,0 +1,15 @@
+fact        = _{ SOI ~ v_branch ~ EOI }
+
+var         = @{ "X" ~ ASCII_DIGIT* }
+
+v_leaf      = @{ ASCII_DIGIT+ }
+
+leaf        = _{ ( var | v_leaf ) }
+
+v_branch    = { "(" ~ leaf ~ any* ~ ")" }
+
+branch      = _{ ( var | v_branch ) }
+
+any         = _{ leaf | branch }
+
+WHITESPACE  = _{ (" " | "\t" | NEWLINE)+ }
