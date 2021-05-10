@@ -1,45 +1,46 @@
 # Uindex - Universal index
 
-[Uindex][0] is a data store for linear data with rich structure.
-With "linear data with rich structure",
-we mean any data that can be parsed with some [parsing expression grammar][1] (PEG).
-There is no need to transform the data to store it with uindex:
-we can describe the structure of our data with a PEG, provide it to uindex,
-and then enter the data straight into uindex,
-as sentences structured according to the top production of the PEG.
-If we think of uindex as a database, we might think of the PEG as the schema of the db.
+[Uindex][0] is a data store, for data that can be parsed as sentences in some context-free language.
+With it, it is possible to create databases (db), add data to them, and query that data.
+The shape of each db (or, we might say, its schema) is given by a [parsing expression grammar][1] (PEG),
+and each database holds data in the form of unicode strings
+structured according to the top production of the provided PEG.
 
 Queries to uindex also take the forms specified in the PEG:
-they are just sentences in the language definded by the PEG.
-In addition, in queries we can use variables in place of any of the productions in the PEG,
-to retrieve unknown values from the index.
+they are just sentences in the language described by the PEG.
+In addition, in queries we can use variables, in place of any of the productions in the PEG,
+to retrieve unknown values from the database.
 We can also use more than a single sentence in the queries.
 
-Uindex stores that data in such a manner that
-adding new sentences to the index is O(1) wrt the size of the index,
-and also that allows queries to be resolved in O(1) wrt the size of the index.
+Uindex stores data in such a manner that
+adding new sentences to a db is O(1) with respect to the size of the db,
+and that allows "fully indexed" queries to be resolved in O(1) also wrt the size of the db.
+See below for the meaning of "fully indexed" in this context.
 
 ## Example
 
 As an example, we will build a very simple database of triples, subject-verb-object.
 Words (be they subjects, verbs or objects) will have the form of strings of alphanumeric characters,
 and sentences will consist in 3 such words separated by spaces and terminated by a dot.
-So an example sentence in this db could be ``susan likes oranges.``.
+XXX uindex fact terminator XXX
+So an example sentence in this db could be ``susan likes oranges``.
 The PEG for this would be:
 
 ```pest
 fact        = { word ~ word ~ word }
 
-word        = { ASCII_ALPHANUMERIC+ }
+word        = @{ ASCII_ALPHANUMERIC+ }
 
 WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 ```
 &nbsp;
 &nbsp;
 
-Uindex uses [Pest][2] to deal with PEGs, so look up the pest documentation for the [specific
-syntax][4] for PEGs used by uindex. In particular, the ``WHITESPACE`` rule is special for Pest,
-and if provided, it will be inserted between any 2 other chained productions.
+Uindex uses [Pest][2] to deal with PEGs, so look up the pest documentation for
+the [specific syntax][4] for PEGs used by uindex. In particular, the
+``WHITESPACE`` rule is special for Pest, and if provided, it will be inserted
+between any 2 other chained or repeated productions (except within atomic productions,
+which are marked with `@`.)
 
 The only uindex specific thing in the grammar above is naming the top production ``fact``;
 uindex requires it.
@@ -63,14 +64,14 @@ WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 
 In short, we provide a production for variables, we prefix the production we want variables to be able to match
 with ``v_``, and then we provide a new production, with the old name (without the ``v_`` prefix),
-in which we mix the old production with `var`.
+which is the sum of the old production and `var`.
 We can mark as many productions like this as we want, and they can be terminal or not.
 
 To use this grammar, we need to set up some boilerplate. At this moment, uindex can only be used from [Rust][3].
 
 So we store the code above in a file named ``grammar.pest``, which we place at the root of our rust package.
 
-But first of all, we must add some dependencies to our `Cargo.toml`:
+We must add some dependencies to our `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -131,22 +132,60 @@ Finally we can query the system like:
 ```rust
 db.ask("john likes oranges.");  // -> true
 db.ask("john likes apples.");  // -> false
-db.ask("susan likes X1.");  // -> [{<X1>: oranges}, {<X1>: apples}]
-db.ask("X1 likes oranges. X1 likes apples.");  // -> [{<X1>: susan}]
-db.ask("susan likes X1. john likes X1.");  // -> [{<X1>: oranges}]
+db.ask("susan likes X1.");  // -> [{X1: oranges}, {X1: apples}]
+db.ask("X1 likes oranges. X1 likes apples.");  // -> [{X1: susan}]
+db.ask("susan likes X1. john likes X1.");  // -> [{X1: oranges}]
 db.ask("susan X1 apples. john X1 apples.");  // -> []
 ```
 
 And that's it.
 
-## Benchmarks
+## API
 
-Work in progress.
+### Grammar
 
-Prelinary data shows that for very simple data (like the triple store above),
-with 5.000.000 entries in the db, uindex performs about the same as (in memory, fully indexed) sqlite
-for adding data, and outperforms it by about double for querying data.
-It must also be said that at present, the uindex db weights about 5 times the sqlite db.
+### DB Generator
+
+### tell
+
+### ask
+
+## Complexity
+
+### Data structures and algorithms
+
+### Benchmarks
+
+Here we compare the performance of uindex with the performance of in memory sqlite (driven from python).
+The aim is not to propose uindex as a replacement of sqlite, but simply to show that uindex performs
+acceptably, i.e. that its costs, in terms of both time and space, are sensible and grow sensibly.
+
+Also note that in terms of space, there is work to be done; I must admit I dont understand about a 3rd
+of the space taken by a uindex db.
+
+#### Simple db, simple query
+
+For this benchmark we used data with a very simple structure, just a set of triples like in the above example,
+and fully qualified queries that would just retrieve a single row / sentence, to obtain a yes/no answer.
+For sqlite, we used a single table with 3 varchar columns, with a single index using all 3 columns.
+We added up to 10.000.000 entries, and measured the time taken to add new entries and to resolve single answer queries.
+In this benchmark, the performance in both cases did not degrade with the size of the db.
+Uindex would take a mean of 5.3 microseconds (usecs) to add a new entry, and of 4.4 usecs to resolve a query.
+Sqlite would take a mean of 12.5 usecs to add a new entry, and of 7.8 usecs to resolve a query.
+
+|| uindex | sqlite |
+|-------------|------------|-------------|
+| insert  | 4.36 +/- 0.45 | 12.52 +/- 1.26 |
+| query | 4.00 +/- 0.53 | 7.94 +/- 0.91 |
+
+#### Simple db, query with intersection
+
+For this benchmark we used the same data as in the previous benchmark,
+and queries that would extract a value common to 2 rows / sentences.
+In this benchmark, the performance in both cases also did not degrade with the size of the db.
+Uindex would take a mean of 5.3 microseconds (usecs) to add a new entry, and of 11.3 usecs to resolve a query.
+Sqlite would take a mean of 11.9 usecs to add a new entry, and of 22.2 usecs to resolve a query.
+
 
 ## TODO
 
