@@ -57,6 +57,7 @@ fn main() {
     //let o_one_sec = time::Duration::from_millis(100);
     let t0 = SystemTime::now();
     let mut start = 0;
+    let mut count = 0;
     
     for i in 0..opt.facts {
         start += 1;
@@ -79,6 +80,7 @@ fn main() {
 
         db.tell( unsafe { mem::transmute( f1.as_str() ) });
         db.tell( unsafe { mem::transmute( f2.as_str() ) });
+        count += 2;
 
         if i < 100 {
             let population = format!("{}", (start * 1000));
@@ -87,6 +89,7 @@ fn main() {
             let pre_f3 = format!("T {} {} {} ◊", city, population, country);
             let f3 = Box::leak(Box::new(pre_f3));
             db.tell( unsafe { mem::transmute( f3.as_str() ) });
+            count += 1;
         }
         
         let t2 = SystemTime::now();
@@ -112,6 +115,6 @@ fn main() {
     let t3 = SystemTime::now();
     let total_time = t3.duration_since(t0).unwrap().as_millis() as f64 / 1000.0;
 
-    println!("total time: {} sec for {} entries", total_time, start);
+    println!("total time: {} sec for {} entries", total_time, count);
 
 }

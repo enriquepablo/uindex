@@ -70,6 +70,7 @@ CREATE INDEX IF NOT EXISTS [childBIx] ON [Child] ([branch]);
 CREATE INDEX IF NOT EXISTS [childLIx] ON [Child] ([leaf]);
 CREATE INDEX IF NOT EXISTS [childIDIx] ON [Child] ([idx]);
 CREATE INDEX IF NOT EXISTS [childISIx] ON [Child] ([is_branch]);
+CREATE INDEX IF NOT EXISTS [childISDIx] ON [Child] ([idx], [is_branch]);
 """
 
 

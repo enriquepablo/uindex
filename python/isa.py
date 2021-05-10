@@ -30,7 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-import os
 import sqlite3
 from typing import Any, Dict, List, Union
 import argparse
@@ -152,7 +151,7 @@ if __name__ == '__main__':
 
             t_q = (t3 - t2) * 100000.0
 
-            print(f"  round {i}, duration: fact {t_f} usec, query {t_q} usec")
+            print(f"{t_f:.3f}  {t_q:.3f}")
 
     t4 = time.time()
     t_t = (t4 - t0)

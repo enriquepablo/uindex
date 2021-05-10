@@ -60,22 +60,25 @@ fn main() {
     //let o_one_sec = time::Duration::from_millis(100);
     let t0 = SystemTime::now();
     let mut start = 0;
+    let mut count = 0;
     
     for i in 0..opt.facts {
         start += 1;
         let s = sets[(i % nsets) as usize];
-        let name = format!("{}{}{}", s, i, start);
-        let f = Box::leak(Box::new(format!("{name} ISA{start} {s} ◊", name = name, start = start, s = s)));
-        db.tell( unsafe { mem::transmute( f.as_str() ) });
+        let f = format!("{s}{i}{start} ISA{start} {s} ◊", s=s, i=i, start = start);
+        {
+            db.tell( unsafe { mem::transmute( f.as_str() ) });
+        }
+        count += 1;
 
         if (i % opt.report) == 0 {
             let t1 = SystemTime::now();
             start += 1;
             for n in 0..10 {
                 let s = sets[(n % nsets) as usize];
-                let name = format!("{}{}{}", s, n, start);
-                let f = Box::leak(Box::new(format!("{name} ISA{start} {s} ◊", name = name, start = start, s = s)));
+                let f = format!("{s}{n}{start} ISA{start} {s} ◊", s=s, n=n, start = start);
                 db.tell( unsafe { mem::transmute( f.as_str() ) });
+                count += 1;
             }
             let t2 = SystemTime::now();
 
@@ -83,8 +86,7 @@ fn main() {
 
             for n in 0..10 {
                 let s = sets[(n % nsets) as usize];
-                let name = format!("{}{}{}", s, n, start);
-                let f = Box::leak(Box::new(format!("{name} ISA{start} {s} ◊", name = name, start = start, s = s)));
+                let f = format!("{s}{n}{start} ISA{start} {s} ◊", s=s, n=n, start = start);
                 let resp = db.ask( unsafe { mem::transmute( f.as_str() ) });
                 if resp.len() == 0 {
                     println!("Wrong resp for {}", f);
@@ -94,12 +96,12 @@ fn main() {
 
             let t_q = t3.duration_since(t2).unwrap().as_micros() as f64 / 10.0;
 
-            println!("  round {}, duration: fact {} usec, query {} usec", i, t_f, t_q);
+            println!("{:.3}  {:.3}", t_f, t_q);
         }
     }
     let t3 = SystemTime::now();
     let total_time = t3.duration_since(t0).unwrap().as_millis() as f64 / 1000.0;
 
-    println!("total time: {} sec for {} entries", total_time, start);
+    println!("total time: {} sec for {} entries", total_time, count);
 
 }

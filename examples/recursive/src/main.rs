@@ -112,15 +112,18 @@ fn main() {
 
     //let o_one_sec = time::Duration::from_millis(100);
     let t0 = SystemTime::now();
+    let mut count = 0;
     
     for i in 0..opt.facts {
         let f = Box::leak(Box::new(make_tree(opt.treedepth, opt.branchlength)));
         db.tell( unsafe { mem::transmute( f.as_str() ) });
+        count += 1;
 
         if (i % opt.report) == 0 {
             let q = Box::leak(Box::new(make_tree_full(opt.treedepth, opt.branchlength)));
             let t1 = SystemTime::now();
             db.tell( unsafe { mem::transmute( q.as_str() ) });
+            count += 1;
             let t2 = SystemTime::now();
 
             let t_f = t2.duration_since(t1).unwrap().as_micros() as f64;
@@ -139,6 +142,6 @@ fn main() {
     let t3 = SystemTime::now();
     let total_time = t3.duration_since(t0).unwrap().as_millis() as f64 / 1000.0;
 
-    println!("total time: {} sec for {} entries", total_time, opt.facts);
+    println!("total time: {} sec for {} entries", total_time, count);
 
 }
