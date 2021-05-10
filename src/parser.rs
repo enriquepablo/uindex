@@ -121,7 +121,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     pre_new_root_segments.push(tsegment);
                     new_root_segments = Some(pre_new_root_segments);
                 }
-                if in_var_range || (is_leaf && !is_empty) {
+                if in_var_range || is_var {
                     let key = self.calculate_hash(name.as_str(), text, is_leaf);
                     info!("Interning segment '{}' with text: {}", name, text);
                     let segment = self.lexicon.intern_with_name(self.calculate_name_hash(name.as_str()), text, key, is_leaf, is_var, in_var_range, is_empty, unique);

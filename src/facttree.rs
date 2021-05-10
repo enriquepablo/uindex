@@ -97,49 +97,37 @@ impl<'a> FactSet<'a> {
                 path_index += 1;
                 continue;
             }
-            if path.value.in_var_range {
-                let opt_child = parent.get_lchild(path.identity);
-                let reindex = path.paths_after(&paths);
-                if opt_child.is_some() {
-                    child = opt_child.expect("node");
-                    if !path.value.is_leaf {
-                        carry = carry.add(reindex, child);
-                        path_index += 1;
-                        continue;
-                    }
-                } else if path.value.is_leaf {
-                    paths.insert(0, path);
-                    self.create_paths(parent, paths, carry, path_index);
-                    return;
-                } else {
-                    let unique_child = path.value.unique;
-                    let path_id = path.identity;
-                    let child_node = FSNode::new(Some(path.value));
-                    let (new_child, new_carry) = self.intern_lchild(
-                        parent,
-                        path_id,
-                        unique_child,
-                        child_node,
-                        carry,
-                        path_index,
-                    );
-                    child = new_child;
-                    carry = new_carry;
-
+            let opt_child = parent.get_lchild(path.identity);
+            let reindex = path.paths_after(&paths);
+            if opt_child.is_some() {
+                child = opt_child.expect("node");
+                if !path.value.is_leaf {
                     carry = carry.add(reindex, child);
                     path_index += 1;
                     continue;
                 }
+            } else if path.value.is_leaf {
+                paths.insert(0, path);
+                self.create_paths(parent, paths, carry, path_index);
+                return;
             } else {
+                let unique_child = path.value.unique;
                 let path_id = path.identity;
-                let opt_child = parent.get_child(path_id);
-                if opt_child.is_none() {
-                    paths.insert(0, path);
-                    self.create_paths(parent, paths, carry, path_index);
-                    return;
-                } else {
-                    child = opt_child.expect("node");
-                }
+                let child_node = FSNode::new(Some(path.value));
+                let (new_child, new_carry) = self.intern_lchild(
+                    parent,
+                    path_id,
+                    unique_child,
+                    child_node,
+                    carry,
+                    path_index,
+                );
+                child = new_child;
+                carry = new_carry;
+
+                carry = carry.add(reindex, child);
+                path_index += 1;
+                continue;
             }
             parent = child;
             path_index += 1;
@@ -163,29 +151,21 @@ impl<'a> FactSet<'a> {
             }
             let path_id = path.identity;
             let unique_child = path.value.unique;
-            let logic_node = path.value.in_var_range;
             let is_leaf = path.value.is_leaf;
             let reindex = path.paths_after(&paths);
             let child_node = FSNode::new(Some(path.value));
             let real_index = path_index + offset;
-            if logic_node {
-                let (new_child, new_carry) = self.intern_lchild(
-                    parent,
-                    path_id,
-                    unique_child,
-                    child_node,
-                    carry,
-                    real_index,
-                );
-                child = new_child;
-                carry = new_carry;
-            } else {
-                let (new_child, new_carry) =
-                    self.intern_child(parent, path_id, child_node, carry, real_index);
-                child = new_child;
-                carry = new_carry;
-            };
-            if logic_node && !is_leaf {
+            let (new_child, new_carry) = self.intern_lchild(
+                parent,
+                path_id,
+                unique_child,
+                child_node,
+                carry,
+                real_index,
+            );
+            child = new_child;
+            carry = new_carry;
+            if !is_leaf {
                 carry = carry.add(reindex, child);
                 path_index += 1;
                 continue;
@@ -193,25 +173,6 @@ impl<'a> FactSet<'a> {
             parent = child;
             path_index += 1;
         }
-    }
-    pub fn intern_child(
-        &'a self,
-        parent: &'a FSNode<'a>,
-        path_id: u64,
-        child: FSNode<'a>,
-        mut carry: CarryOver<'a>,
-        index: usize,
-    ) -> (&'a FSNode<'a>, CarryOver<'a>) {
-        let child_ref = Box::leak(Box::new(child));
-        let (new_carry, more) = carry.node(index);
-        carry = new_carry;
-        if more.is_some() {
-            let mut other_parent = more.unwrap().children.get_or_init(mk_children).borrow_mut();
-            other_parent.insert(path_id, child_ref);
-        }
-        let mut one_parent = parent.children.get_or_init(mk_children).borrow_mut();
-        one_parent.insert(path_id, child_ref);
-        (child_ref, carry)
     }
     pub fn intern_lchild(
         &'a self,
@@ -244,7 +205,6 @@ impl<'a> FactSet<'a> {
 
 #[derive(Debug)]
 pub struct FSNode<'a> {
-    children: OnceCell<RefCell<HashMap<u64, &'a FSNode<'a>>>>,
     lchildren: OnceCell<RefCell<HashMap<u64, &'a FSNode<'a>>>>,
     value: Option<&'a MPSegment>,
 }
@@ -252,20 +212,8 @@ pub struct FSNode<'a> {
 impl<'a> FSNode<'a> {
     pub fn new(value: Option<&'a MPSegment>) -> FSNode<'a> {
         FSNode {
-            children: OnceCell::new(),
             lchildren: OnceCell::new(),
             value,
-        }
-    }
-    pub fn get_child(&'a self, path_id: u64) -> Option<&'a Self> {
-        let children = self.children.get();
-        if children.is_none() {
-            return None;
-        }
-        let ch = children.unwrap().borrow();
-        match ch.get(&path_id) {
-            None => None,
-            Some(child_ref) => Some(*child_ref),
         }
     }
     pub fn get_lchild(&'a self, path_id: u64) -> Option<&'a Self> {
@@ -275,17 +223,6 @@ impl<'a> FSNode<'a> {
         }
         let ch = children.unwrap().borrow();
         match ch.get(&path_id) {
-            None => None,
-            Some(child_ref) => Some(*child_ref),
-        }
-    }
-    pub fn get_child_r(&'a self, path: &'a MPPath<'a>) -> Option<&'a Self> {
-        let children = self.children.get();
-        if children.is_none() {
-            return None;
-        }
-        let ch = children.unwrap().borrow();
-        match ch.get(&path.identity) {
             None => None,
             Some(child_ref) => Some(*child_ref),
         }
@@ -372,11 +309,7 @@ impl<'a> FSNode<'a> {
             } else {
                 new_path = path;
             }
-            if new_path.value.in_var_range {
-                next = self.get_lchild_r(new_path);
-            } else {
-                next = self.get_child_r(new_path);
-            }
+            next = self.get_lchild_r(new_path);
             if next.is_some() {
                 let next_node = next.unwrap();
                 let mut npaths = vec![paths];
