@@ -66,15 +66,13 @@ fn main() {
         let given_name = format!("John{}", start);
         let surname = format!("Smith{}", start);
 
-        let pre_f1 = format!("U {} {} {} ◊", given_name, surname, userid);
-        let f1 = Box::leak(Box::new(pre_f1));
+        let f1 = format!("U {} {} {} ◊", given_name, surname, userid);
 
         let street = format!("Lane{}", start % 1000);
         let number = format!("{}", start);
         let city = format!("city{}", start % 100);
 
-        let pre_f2 = format!("A {} {} {} {} ◊", userid, street, number, city);
-        let f2 = Box::leak(Box::new(pre_f2));
+        let f2 = format!("A {} {} {} {} ◊", userid, street, number, city);
 
         let t1 = SystemTime::now();
 
@@ -86,8 +84,7 @@ fn main() {
             let population = format!("{}", (start * 1000));
             let country = format!("country{}", start % 50);
 
-            let pre_f3 = format!("T {} {} {} ◊", city, population, country);
-            let f3 = Box::leak(Box::new(pre_f3));
+            let f3 = format!("T {} {} {} ◊", city, population, country);
             db.tell( unsafe { mem::transmute( f3.as_str() ) });
             count += 1;
         }
@@ -96,9 +93,9 @@ fn main() {
 
         if (i % opt.report) == 0 {
 
-            let t_f = t2.duration_since(t1).unwrap().as_micros() as f64;
+            let t_f = t2.duration_since(t1).unwrap().as_nanos() as f64 / 1000.0 as f64;
 
-            let f = Box::leak(Box::new(format!("U {} {} X1 ◊ A X1 X2 X3 X4 ◊ T X4 X5 X6 ◊", given_name, surname)));
+            let f = format!("U {} {} X1 ◊ A X1 X2 X3 X4 ◊ T X4 X5 X6 ◊", given_name, surname);
 
             let resp = db.ask( unsafe { mem::transmute( f.as_str() ) });
 
@@ -107,9 +104,9 @@ fn main() {
             }
             let t3 = SystemTime::now();
 
-            let t_q = t3.duration_since(t2).unwrap().as_micros() as f64;
+            let t_q = t3.duration_since(t2).unwrap().as_nanos() as f64 / 1000.0 as f64;
 
-            println!("  round {}, duration: fact {} usec, query {} usec", i, t_f, t_q);
+            println!("{:.3}  {:.3}", t_f, t_q);
         }
     }
     let t3 = SystemTime::now();

@@ -10,4 +10,4 @@ v_name      = @{ ASCII_ALPHANUMERIC+ }
 
 var_range       = _{ v_name | var }
 
-WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
+WHITESPACE  = _{ (" " | "\t" | NEWLINE)+ }

@@ -4,3 +4,4 @@ target/
 heaptrack.*
 out
 perf.*
+*.dat

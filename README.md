@@ -170,28 +170,93 @@ and fully qualified queries that would just retrieve a single row / sentence, to
 For sqlite, we used a single table with 3 varchar columns, with a single index using all 3 columns.
 We added up to 10.000.000 entries, and measured the time taken to add new entries and to resolve single answer queries.
 In this benchmark, the performance in both cases did not degrade with the size of the db.
-Uindex would take a mean of 5.3 microseconds (usecs) to add a new entry, and of 4.4 usecs to resolve a query.
-Sqlite would take a mean of 12.5 usecs to add a new entry, and of 7.8 usecs to resolve a query.
 
 || uindex | sqlite |
 |-------------|------------|-------------|
 | insert  | 4.36 +/- 0.45 | 12.52 +/- 1.26 |
 | query | 4.00 +/- 0.53 | 7.94 +/- 0.91 |
 
+[Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/isa/src)
+[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/isa.py)
+
 #### Simple db, query with intersection
 
 For this benchmark we used the same data as in the previous benchmark,
 and queries that would extract a value common to 2 rows / sentences.
 In this benchmark, the performance in both cases also did not degrade with the size of the db.
-Uindex would take a mean of 5.3 microseconds (usecs) to add a new entry, and of 11.3 usecs to resolve a query.
-Sqlite would take a mean of 11.9 usecs to add a new entry, and of 22.2 usecs to resolve a query.
 
+|| uindex | sqlite |
+|-------------|------------|-------------|
+| query | 9.69 +/- 0.73 | 21.79 +/- 2.55 |
+
+[Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/double-q/src)
+[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/double-q.py)
+
+#### Simple db, query returning multiple rows
+
+For this benchmark we used the same data as in the previous benchmarks,
+and queries that would extract a number of rows, from 100 to 1000.
+Adding data had the same cost as in the previous benchmark.
+The cost of querying data grew a bit more with the number of hits for sqlite:
+
+![Increasing the number of hits](img/isa-many-ask.png)
+
+[Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/isa-many/src)
+[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/isa-many.py)
+
+#### Db with 3 tables, query joining all 3
+
+Here we set up a db with 3 tables, one of them with foreign keys to the other 2,
+and query for data in one of the boundary tables providing data from the other.
+There was no degradation of performance adding up to 1.000.000 entries in each table,
+neither for uindex nor for sqlite.
+
+|| uindex | sqlite |
+|-------------|------------|-------------|
+| insert  | 10.25 +/- 0.86 | 47.56 +/- 8.01 |
+| query | 16.94 +/- 1.06 | 12.82 +/- 0.75 |
+
+Note that for sqlite, in this case we wanted to check for duplicates before inserting,
+affecting the performance. For uindex this is given.
+
+[Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/three-tables/src)
+[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/three-tables.py)
+
+#### Recursive db.
+
+In this benchmark we set up a store of trees of varying width (number of children per branch)
+and depth (number of branches from the root to a leaf). An example data point in this scheme:
+
+(6 (60 617 64) (31 493 538))
+
+Each parenthesis is a branch, in which the 1st entry is the name of the branch and the rest are the children;
+so the previous is a depth 2 width 2 tree.
+
+With sqlite, I have tried with
+3 tables, Branch Leaf and Child, where Child would hold a "parent" foreign key to Branch
+and a "child" forign key to either Child or Branch. I haven not found a combination of
+indexes that gave a performance anywhere near acceptable,
+so I am not including sqlite results here. It could take 10 and 12 seconds to find a tree
+in a db with 20.000 trees of depth 2 and width 2; obviously sqlite is not meant for this kind of load.
+
+However, I want to show that uindex has no problem with this kind of structure,
+So here is the performance of uindex with trees of depth 2 and width 2, depth 2 and width 3,
+and depth 3 and witdth 3:
+
+|| insert | query |
+| 2-2 | 10.73 +/- 2.19 | 7.75 +/- 1.30 |
+| 2-3 | 17.40 +/- 3.14 | 12.26 +/- 1.47 |
+| 3-3 | 55.73 +/- 5.47 | 38.79 +/- 3.26 |
+
+[Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/recursive/src)
+[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/recursive.py)
 
 ## TODO
 
 Note that this is a work in progress. At the moment uindex does not even have persistence;
 it only exists in memory. There is also room for improvement in the sizes of the dbs,
-and queries would benefit by using some parallellism.
+and queries would benefit by using some parallellism. There is also work being done to
+add (numeric and string) constraints to the query variables.
 
 &copy; EnriquePérez Arnaud &lt;enrique at cazalla dot net&gt; 2021
 

@@ -228,7 +228,7 @@ if __name__ == '__main__':
             t_f = (t2 - t1) * 1000000.0
             t_q = (t4 - t3) * 1000000.0
 
-            print(f"  round {i}, duration: fact {t_f} usec, query {t_q} usec")
+            print(f"{t_f:.3f}  {t_q:.3f}")
 
     t5 = time.time()
     t_t = (t5 - t0)

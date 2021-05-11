@@ -69,7 +69,7 @@ fn main() {
         start += 1;
         let s = sets[(i % nsets) as usize];
         let name = format!("{}{}{}", s, i, start);
-        let f = Box::leak(Box::new(format!("{name} ISA{start} {s} ◊", name = name, start = start, s = s)));
+        let f = format!("{name} ISA{start} {s} ◊", name = name, start = start, s = s);
         db.tell( unsafe { mem::transmute( f.as_str() ) });
 
         if (i % opt.report) == 0 {
@@ -78,14 +78,14 @@ fn main() {
             for n in 0..opt.answers {
                 let s = sets[(n % nsets) as usize];
                 let name = format!("{}{}{}", s, n, start);
-                let f = Box::leak(Box::new(format!("john ISA{start} {name} ◊", name = name, start = start)));
+                let f = format!("john ISA{start} {name} ◊", name = name, start = start);
                 db.tell( unsafe { mem::transmute( f.as_str() ) });
             }
             let t2 = SystemTime::now();
 
             let t_f = t2.duration_since(t1).unwrap().as_micros() as f64 / opt.answers as f64;
 
-            let f = Box::leak(Box::new(format!("john ISA{start} X1 ◊", start = start)));
+            let f = format!("john ISA{start} X1 ◊", start = start);
             let resp = db.ask( unsafe { mem::transmute( f.as_str() ) });
             if resp.len() != opt.answers {
                 println!("Wrong resp for {}: found {}, expected {}", f, resp.len(), opt.answers);
@@ -94,7 +94,7 @@ fn main() {
 
             let t_q = t3.duration_since(t2).unwrap().as_micros() as f64;
 
-            println!("  round {}, duration: fact {} usec, query {} usec", i, t_f, t_q);
+            println!("{:.3}  {:.3}", t_f, t_q);
         }
     }
     let t3 = SystemTime::now();

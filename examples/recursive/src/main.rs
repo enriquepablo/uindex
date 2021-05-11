@@ -115,18 +115,18 @@ fn main() {
     let mut count = 0;
     
     for i in 0..opt.facts {
-        let f = Box::leak(Box::new(make_tree(opt.treedepth, opt.branchlength)));
+        let f = make_tree(opt.treedepth, opt.branchlength);
         db.tell( unsafe { mem::transmute( f.as_str() ) });
         count += 1;
 
         if (i % opt.report) == 0 {
-            let q = Box::leak(Box::new(make_tree_full(opt.treedepth, opt.branchlength)));
+            let q = make_tree_full(opt.treedepth, opt.branchlength);
             let t1 = SystemTime::now();
             db.tell( unsafe { mem::transmute( q.as_str() ) });
             count += 1;
             let t2 = SystemTime::now();
 
-            let t_f = t2.duration_since(t1).unwrap().as_micros() as f64;
+            let t_f = t2.duration_since(t1).unwrap().as_nanos() as f64 / 1000.0;
 
             let resp = db.ask( unsafe { mem::transmute( q.as_str() ) });
             if resp.len() != 1 {
@@ -134,9 +134,9 @@ fn main() {
             }
             let t3 = SystemTime::now();
 
-            let t_q = t3.duration_since(t2).unwrap().as_micros() as f64;
+            let t_q = t3.duration_since(t2).unwrap().as_nanos() as f64 / 1000.0;
 
-            println!("  round {}, duration: fact {} usec, query {} usec", i, t_f, t_q);
+            println!("{:.3}  {:.3}", t_f, t_q);
         }
     }
     let t3 = SystemTime::now();

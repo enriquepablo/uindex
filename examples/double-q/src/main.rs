@@ -86,7 +86,7 @@ fn main() {
 
             let t_q = t3.duration_since(t2).unwrap().as_micros() as f64;
 
-            println!("{}   {}", t_f, t_q);
+            println!("{:.3}   {:.3}", t_f, t_q);
         }
     }
     let t3 = SystemTime::now();
