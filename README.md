@@ -241,9 +241,10 @@ in a db with 20.000 trees of depth 2 and width 2; obviously sqlite is not meant 
 
 However, I want to show that uindex has no problem with this kind of structure,
 So here is the performance of uindex with trees of depth 2 and width 2, depth 2 and width 3,
-and depth 3 and witdth 3:
+and depth 3 and witdth 3, querying just for the presence of a particular tree (no unknowns in the query):
 
 || insert | query |
+|-------------|------------|-------------|
 | 2-2 | 10.73 +/- 2.19 | 7.75 +/- 1.30 |
 | 2-3 | 17.40 +/- 3.14 | 12.26 +/- 1.47 |
 | 3-3 | 55.73 +/- 5.47 | 38.79 +/- 3.26 |
