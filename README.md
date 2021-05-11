@@ -173,8 +173,8 @@ In this benchmark, the performance in both cases did not degrade with the size o
 
 || uindex | sqlite |
 |-------------|------------|-------------|
-| insert  | 4.36 +/- 0.45 | 12.52 +/- 1.26 |
-| query | 4.00 +/- 0.53 | 7.94 +/- 0.91 |
+| insert  | 4.36 +/- 0.45 &mu;s | 12.52 +/- 1.26 &mu;s |
+| query | 4.00 +/- 0.53 &mu;s | 7.94 +/- 0.91 &mu;s |
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/isa/src)
 [Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/isa.py)
@@ -187,7 +187,7 @@ In this benchmark, the performance in both cases also did not degrade with the s
 
 || uindex | sqlite |
 |-------------|------------|-------------|
-| query | 9.69 +/- 0.73 | 21.79 +/- 2.55 |
+| query | 9.69 +/- 0.73 &mu;s | 21.79 +/- 2.55 &mu;s |
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/double-q/src)
 [Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/double-q.py)
@@ -213,8 +213,8 @@ neither for uindex nor for sqlite.
 
 || uindex | sqlite |
 |-------------|------------|-------------|
-| insert  | 10.25 +/- 0.86 | 47.56 +/- 8.01 |
-| query | 16.94 +/- 1.06 | 12.82 +/- 0.75 |
+| insert  | 10.25 +/- 0.86 &mu;s | 47.56 +/- 8.01 &mu;s |
+| query | 16.94 +/- 1.06 &mu;s | 12.82 +/- 0.75 &mu;s |
 
 Note that for sqlite, in this case we wanted to check for duplicates before inserting,
 affecting the performance. For uindex this is given.
@@ -245,9 +245,9 @@ and depth 3 and witdth 3, querying just for the presence of a particular tree (n
 
 || insert | query |
 |-------------|------------|-------------|
-| 2-2 | 10.73 +/- 2.19 | 7.75 +/- 1.30 |
-| 2-3 | 17.40 +/- 3.14 | 12.26 +/- 1.47 |
-| 3-3 | 55.73 +/- 5.47 | 38.79 +/- 3.26 |
+| 2-2 | 10.73 +/- 2.19 &mu;s | 7.75 +/- 1.30 &mu;s |
+| 2-3 | 17.40 +/- 3.14 &mu;s | 12.26 +/- 1.47 &mu;s |
+| 3-3 | 55.73 +/- 5.47 &mu;s | 38.79 +/- 3.26 &mu;s |
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/recursive/src)
 [Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/recursive.py)
