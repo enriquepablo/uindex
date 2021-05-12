@@ -3,7 +3,7 @@
 [Uindex][0] is a data store, for data that can be parsed as sentences in some context-free language.
 With it, it is possible to create databases (db), add data to them, and query that data.
 The shape of each db (or, we might say, its schema) is given by a [parsing expression grammar][1] (PEG),
-and each database holds data in the form of unicode strings
+so that each database holds data in the form of unicode strings
 structured according to the top production of the provided PEG.
 
 Queries to uindex also take the forms specified in the PEG:
@@ -14,16 +14,16 @@ We can also use more than a single sentence in the queries.
 
 Uindex stores data in such a manner that
 adding new sentences to a db is O(1) with respect to the size of the db,
-and that allows "fully indexed" queries to be resolved in O(1) also wrt the size of the db.
-See below for the meaning of "fully indexed" in this context.
+and that allows queries with no unknowns to be resolved in O(1) also wrt the size of the db.
 
 ## Example
 
 As an example, we will build a very simple database of triples, subject-verb-object.
 Words (be they subjects, verbs or objects) will have the form of strings of alphanumeric characters,
-and sentences will consist in 3 such words separated by spaces and terminated by a dot.
-XXX uindex fact terminator XXX
-So an example sentence in this db could be ``susan likes oranges``.
+and sentences will consist in 3 such words separated by spaces.
+Uindex provides at the moment a sentence termination symbol (either `<>` or `◊`),
+though the plan is to allow the user to provide it.
+So an example sentence in this db could be ``susan likes oranges ◊``.
 The PEG for this would be:
 
 ```pest
@@ -119,10 +119,10 @@ let db = DBGenerator::gen_db();
 We can add data to it:
 
 ```rust
-db.tell("susan likes oranges.");
-db.tell("susan likes apples.");
-db.tell("john likes oranges.");
-db.tell("john hates apples.");
+db.tell("susan likes oranges ◊");
+db.tell("susan likes apples ◊");
+db.tell("john likes oranges ◊");
+db.tell("john hates apples ◊");
 ```
 &nbsp;
 &nbsp;
@@ -130,15 +130,35 @@ db.tell("john hates apples.");
 Finally we can query the system like:
 
 ```rust
-db.ask("john likes oranges.");  // -> true
-db.ask("john likes apples.");  // -> false
-db.ask("susan likes X1.");  // -> [{X1: oranges}, {X1: apples}]
-db.ask("X1 likes oranges. X1 likes apples.");  // -> [{X1: susan}]
-db.ask("susan likes X1. john likes X1.");  // -> [{X1: oranges}]
-db.ask("susan X1 apples. john X1 apples.");  // -> []
+db.ask("john likes oranges ◊");  // -> true
+db.ask("john likes apples ◊");  // -> false
+db.ask("susan likes X1 ◊");  // -> [{X1: oranges}, {X1: apples}]
+db.ask("X1 likes oranges ◊ X1 likes apples ◊");  // -> [{X1: susan}]
+db.ask("susan likes X1 ◊ john likes X1 ◊");  // -> [{X1: oranges}]
+db.ask("susan X1 apples ◊ john X1 apples ◊");  // -> []
 ```
 
 And that's it.
+
+## Indexing
+
+Uindex keeps the data in a tree structure (with some loops), so querying implies
+searching a path in the tree. The tokens that are parsed out of the data entered into
+uindex are placed in the tree in the order they are found, from root to leaf.
+So it is not convenient to have variables at the start of your queries.
+It is fine to have them at the begining of sentences when they are not the
+first sentence in the query, and the variable in question has already been narrowed down.
+Ill show an example.
+
+Lets imagine a directory of phone numbers, assigning a number to each distnct pair
+of given-name and surname. If we arrange our db to hold data as "number given-name surname",
+and we query "X1 john smith", uindex will check almost all the tree to find the answer.
+However, if we arrange the db to hold data as "surname given-name number", the query
+"john smith X1" would check a very narrow part of the tree.
+
+If there were the need to get data fast in both ways, i.e. getting the number from the name,
+and getting the name from the number, it might make sense to have both types of sentence,
+at the cost of some data redundancy.
 
 ## API
 
@@ -156,28 +176,31 @@ And that's it.
 
 ### Benchmarks
 
-Here we compare the performance of uindex with the performance of in memory sqlite (driven from python).
-The aim is not to propose uindex as a replacement of sqlite, but simply to show that uindex performs
-acceptably, i.e. that its costs, in terms of both time and space, are sensible and grow sensibly.
+Here we compare the performance of uindex with the performance of in memory
+[SQLite][5] (driven from python).  The aim is not to propose uindex as a replacement
+of SQLite, but simply to show that uindex performs acceptably, i.e. that its
+costs, in terms of both time and space, are sensible and grow sensibly.
 
-Also note that in terms of space, there is work to be done; I must admit I dont understand about a 3rd
-of the space taken by a uindex db.
+Also note that in terms of space, there is work to be done. Typically, a uindex
+db would take between 2 and 3 times the memory of a SQLite db with the same
+data.
 
 #### Simple db, simple query
 
 For this benchmark we used data with a very simple structure, just a set of triples like in the above example,
 and fully qualified queries that would just retrieve a single row / sentence, to obtain a yes/no answer.
-For sqlite, we used a single table with 3 varchar columns, with a single index using all 3 columns.
+For SQLite, we used a single table with 3 varchar columns, with a single index using all 3 columns.
 We added up to 10.000.000 entries, and measured the time taken to add new entries and to resolve single answer queries.
 In this benchmark, the performance in both cases did not degrade with the size of the db.
 
-|| uindex | sqlite |
+|| uindex | SQLite |
 |-------------|------------|-------------|
 | insert  | 4.36 +/- 0.45 &mu;s | 12.52 +/- 1.26 &mu;s |
 | query | 4.00 +/- 0.53 &mu;s | 7.94 +/- 0.91 &mu;s |
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/isa/src)
-[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/isa.py)
+
+[Code for the SQLite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/isa.py)
 
 #### Simple db, query with intersection
 
@@ -185,42 +208,45 @@ For this benchmark we used the same data as in the previous benchmark,
 and queries that would extract a value common to 2 rows / sentences.
 In this benchmark, the performance in both cases also did not degrade with the size of the db.
 
-|| uindex | sqlite |
+|| uindex | SQLite |
 |-------------|------------|-------------|
 | query | 9.69 +/- 0.73 &mu;s | 21.79 +/- 2.55 &mu;s |
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/double-q/src)
-[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/double-q.py)
+
+[Code for the SQLite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/double-q.py)
 
 #### Simple db, query returning multiple rows
 
 For this benchmark we used the same data as in the previous benchmarks,
 and queries that would extract a number of rows, from 100 to 1000.
 Adding data had the same cost as in the previous benchmark.
-The cost of querying data grew a bit more with the number of hits for sqlite:
+The cost of querying data grew a bit more with the number of hits for SQLite:
 
 ![Increasing the number of hits](img/isa-many-ask.png)
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/isa-many/src)
-[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/isa-many.py)
+
+[Code for the SQLite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/isa-many.py)
 
 #### Db with 3 tables, query joining all 3
 
 Here we set up a db with 3 tables, one of them with foreign keys to the other 2,
 and query for data in one of the boundary tables providing data from the other.
 There was no degradation of performance adding up to 1.000.000 entries in each table,
-neither for uindex nor for sqlite.
+neither for uindex nor for SQLite.
 
-|| uindex | sqlite |
+|| uindex | SQLite |
 |-------------|------------|-------------|
 | insert  | 10.25 +/- 0.86 &mu;s | 47.56 +/- 8.01 &mu;s |
 | query | 16.94 +/- 1.06 &mu;s | 12.82 +/- 0.75 &mu;s |
 
-Note that for sqlite, in this case we wanted to check for duplicates before inserting,
+Note that for SQLite, in this case we wanted to check for duplicates before inserting,
 affecting the performance. For uindex this is given.
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/three-tables/src)
-[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/three-tables.py)
+
+[Code for the SQLite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/three-tables.py)
 
 #### Recursive db.
 
@@ -232,12 +258,12 @@ and depth (number of branches from the root to a leaf). An example data point in
 Each parenthesis is a branch, in which the 1st entry is the name of the branch and the rest are the children;
 so the previous is a depth 2 width 2 tree.
 
-With sqlite, I have tried with
+With SQLite, I have tried with
 3 tables, Branch Leaf and Child, where Child would hold a "parent" foreign key to Branch
 and a "child" forign key to either Child or Branch. I haven not found a combination of
 indexes that gave a performance anywhere near acceptable,
-so I am not including sqlite results here. It could take 10 and 12 seconds to find a tree
-in a db with 20.000 trees of depth 2 and width 2; obviously sqlite is not meant for this kind of load.
+so I am not including SQLite results here. It could take 10 and 12 seconds to find a tree
+in a db with 20.000 trees of depth 2 and width 2; obviously SQLite is not meant for this kind of load.
 
 However, I want to show that uindex has no problem with this kind of structure,
 So here is the performance of uindex with trees of depth 2 and width 2, depth 2 and width 3,
@@ -250,7 +276,8 @@ and depth 3 and witdth 3, querying just for the presence of a particular tree (n
 | 3-3 | 55.73 +/- 5.47 &mu;s | 38.79 +/- 3.26 &mu;s |
 
 [Code for the uindex benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/examples/recursive/src)
-[Code for the sqlite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/recursive.py)
+
+[Code for the SQLite benchmark](https://github.com/enriquepablo/uindex/tree/mirrors/python/recursive.py)
 
 ## TODO
 
@@ -266,3 +293,4 @@ add (numeric and string) constraints to the query variables.
 [2]:https://pest.rs
 [3]:https://www.rust-lang.org
 [4]:https://pest.rs/book/grammars/syntax.html
+[5]:https://sqlite.org/index.html
