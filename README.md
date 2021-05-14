@@ -177,9 +177,10 @@ at the cost of some data redundancy.
 ### Benchmarks
 
 Here we compare the performance of uindex with the performance of in memory
-[SQLite][5] (driven from python).  The aim is not to propose uindex as a replacement
-of SQLite, but simply to show that uindex performs acceptably, i.e. that its
-costs, in terms of both time and space, are sensible and grow sensibly.
+[SQLite][5] (driven from python). This is not to say that uindex can be
+considered an alternative to SQLite, but simply to show that uindex performs
+acceptably, i.e. that its costs, in terms of both time and space, are sensible
+and grow sensibly.
 
 Also note that in terms of space, there is work to be done. Typically, a uindex
 db would take between 2 and 3 times the memory of a SQLite db with the same
