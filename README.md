@@ -268,7 +268,8 @@ in a db with 20.000 trees of depth 2 and width 2; obviously SQLite is not meant 
 
 However, I want to show that uindex has no problem with this kind of structure,
 So here is the performance of uindex with trees of depth 2 and width 2, depth 2 and width 3,
-and depth 3 and witdth 3, querying just for the presence of a particular tree (no unknowns in the query):
+and depth 3 and witdth 3, querying just for the presence of a particular tree (no unknowns in the query).
+Performance did not degrade with the size of the db, having tested this with 1.000.000 trees in the db:
 
 || insert | query |
 |-------------|------------|-------------|
