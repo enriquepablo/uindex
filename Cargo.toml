@@ -5,8 +5,8 @@ authors = ["Enrique Pérez Arnaud <enrique@cazalla.net>"]
 edition = "2018"
 license = "GPL-3.0+"
 description = "Universal index"
-homepage = "http://uindex.modus_ponens.net"
-documentation = "http://doc.uindex.modus_ponens.net"
+homepage = "http://uindex.modus-ponens.net"
+documentation = "https://gitlab.com/enriquepablo/uindex"
 repository = "https://gitlab.com/enriquepablo/uindex"
 readme = "README.md"
 
