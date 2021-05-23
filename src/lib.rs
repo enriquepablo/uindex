@@ -68,8 +68,8 @@ extern crate syn;
 
 use proc_macro2::TokenStream;
 
-pub fn derive_dbase(input: proc_macro::TokenStream) -> TokenStream {
-    let ast: syn::DeriveInput = syn::parse(input).unwrap();
+pub fn derive_dbase(input: proc_macro2::TokenStream) -> TokenStream {
+    let ast: syn::DeriveInput = syn::parse2(input).unwrap();
     let name = ast.ident;
     let attr = &ast.attrs[0];
 
