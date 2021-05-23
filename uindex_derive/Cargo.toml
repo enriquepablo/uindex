@@ -14,4 +14,4 @@ readme = "README.md"
 proc-macro = true
 
 [dependencies]
-uindex = { path = "../" }
+uindex = "0.1.1"
